@@ -1,72 +1,231 @@
-<?xml version="1.0" encoding="utf-8"?>
+package com.jarvis.assistant
 
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+import android.Manifest
+import android.app.AlarmManager
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Bundle
+import android.provider.Settings
+import android.widget.Button
+import android.widget.LinearLayout
+import android.widget.TextView
+import androidx.activity.ComponentActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import java.util.Locale
 
-    <!-- Internet: AI backend / future live news -->
-    <uses-permission android:name="android.permission.INTERNET" />
+class MainActivity : ComponentActivity() {
 
-    <!-- Microphone -->
-    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    companion object {
+        private const val REQUEST_PERMISSIONS = 100
+    }
 
-    <!-- Foreground service -->
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    private lateinit var statusText: TextView
 
-    <!-- Notifications -->
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
 
-    <!-- Exact alarms / reminders -->
-    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+        createInterface()
+    }
 
-    <!-- Allow JARVIS to check whether these apps are installed -->
-    <queries>
+    private fun createInterface() {
 
-        <package android:name="com.whatsapp" />
+        val root = LinearLayout(this)
 
-        <package android:name="com.google.android.youtube" />
+        root.orientation = LinearLayout.VERTICAL
+        root.setPadding(40, 80, 40, 40)
 
-        <package android:name="com.android.chrome" />
+        root.setBackgroundColor(
+            android.graphics.Color.rgb(3, 5, 9)
+        )
 
-        <package android:name="com.instagram.android" />
+        val title = TextView(this)
 
-    </queries>
+        title.text = "J A R V I S"
+        title.textSize = 42f
+        title.gravity = android.view.Gravity.CENTER
+        title.setTextColor(
+            android.graphics.Color.rgb(0, 190, 255)
+        )
 
-    <application
-        android:allowBackup="true"
-        android:icon="@android:drawable/ic_btn_speak_now"
-        android:label="JARVIS"
-        android:roundIcon="@android:drawable/ic_btn_speak_now"
-        android:supportsRtl="true"
-        android:theme="@style/Theme.Jarvis">
+        root.addView(title)
 
-        <!-- Main JARVIS screen -->
-        <activity
-            android:name=".MainActivity"
-            android:exported="true">
+        val subtitle = TextView(this)
 
-            <intent-filter>
+        subtitle.text = "PERSONAL AI ASSISTANT"
+        subtitle.textSize = 18f
+        subtitle.gravity = android.view.Gravity.CENTER
+        subtitle.setTextColor(
+            android.graphics.Color.LTGRAY
+        )
 
-                <action android:name="android.intent.action.MAIN" />
+        root.addView(subtitle)
 
-                <category android:name="android.intent.category.LAUNCHER" />
+        statusText = TextView(this)
 
-            </intent-filter>
+        statusText.text = "JARVIS OFFLINE\n\nAssistant is sleeping"
+        statusText.textSize = 22f
+        statusText.gravity = android.view.Gravity.CENTER
+        statusText.setPadding(0, 80, 0, 80)
+        statusText.setTextColor(
+            android.graphics.Color.WHITE
+        )
 
-        </activity>
+        root.addView(statusText)
 
-        <!-- Voice / background assistant service -->
-        <service
-            android:name=".JarvisService"
-            android:enabled="true"
-            android:exported="false"
-            android:foregroundServiceType="microphone" />
+        val activateButton = Button(this)
 
-        <!-- Reminder receiver -->
-        <receiver
-            android:name=".AlarmReceiver"
-            android:enabled="true"
-            android:exported="false" />
+        activateButton.text = "ACTIVATE JARVIS"
+        activateButton.textSize = 18f
 
-    </application>
+        activateButton.setOnClickListener {
+            activateJarvis()
+        }
 
-</manifest>
+        root.addView(activateButton)
+
+        val reminderButton = Button(this)
+
+        reminderButton.text = "TEST REMINDER"
+        reminderButton.textSize = 18f
+
+        reminderButton.setOnClickListener {
+            testReminder()
+        }
+
+        root.addView(reminderButton)
+
+        val stopButton = Button(this)
+
+        stopButton.text = "STOP JARVIS"
+        stopButton.textSize = 18f
+
+        stopButton.setOnClickListener {
+            stopJarvis()
+        }
+
+        root.addView(stopButton)
+
+        setContentView(root)
+    }
+
+    private fun activateJarvis() {
+
+        requestPermissionsIfNeeded()
+
+        try {
+
+            val intent = Intent(
+                this,
+                JarvisService::class.java
+            )
+
+            ContextCompat.startForegroundService(
+                this,
+                intent
+            )
+
+            statusText.text =
+                "JARVIS ONLINE\n\nListening..."
+
+        } catch (e: Exception) {
+
+            statusText.text =
+                "JARVIS ERROR\n\n${e.message}"
+        }
+    }
+
+    private fun stopJarvis() {
+
+        val intent = Intent(
+            this,
+            JarvisService::class.java
+        )
+
+        stopService(intent)
+
+        statusText.text =
+            "JARVIS OFFLINE\n\nAssistant is sleeping"
+    }
+
+    private fun requestPermissionsIfNeeded() {
+
+        val permissions = mutableListOf<String>()
+
+        if (
+            android.os.Build.VERSION.SDK_INT >= 23 &&
+            ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.RECORD_AUDIO
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            permissions.add(
+                Manifest.permission.RECORD_AUDIO
+            )
+        }
+
+        if (
+            android.os.Build.VERSION.SDK_INT >= 33 &&
+            ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            permissions.add(
+                Manifest.permission.POST_NOTIFICATIONS
+            )
+        }
+
+        if (permissions.isNotEmpty()) {
+
+            ActivityCompat.requestPermissions(
+                this,
+                permissions.toTypedArray(),
+                REQUEST_PERMISSIONS
+            )
+        }
+    }
+
+    private fun testReminder() {
+
+        try {
+
+            val alarmManager =
+                getSystemService(Context.ALARM_SERVICE)
+                    as AlarmManager
+
+            val intent = Intent(
+                this,
+                AlarmReceiver::class.java
+            )
+
+            val pendingIntent =
+                PendingIntent.getBroadcast(
+                    this,
+                    100,
+                    intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or
+                            PendingIntent.FLAG_IMMUTABLE
+                )
+
+            val triggerTime =
+                System.currentTimeMillis() + 60_000L
+
+            alarmManager.setAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP,
+                triggerTime,
+                pendingIntent
+            )
+
+            statusText.text =
+                "REMINDER SET\n\nTest reminder in 1 minute"
+
+        } catch (e: Exception) {
+
+            statusText.text =
+                "REMINDER ERROR\n\n${e.message}"
+        }
+    }
+}
