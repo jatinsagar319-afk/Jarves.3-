@@ -5,73 +5,86 @@ import org.json.JSONArray
 
 object MemoryStore {
 
-    private const val PREF =
-        "jarvis_memory"
+    private const val PREF_NAME = "jarvis_memory"
+    private const val KEY_MEMORIES = "memories"
 
-    private const val KEY =
-        "saved_items"
-
-    fun save(
+    fun saveMemory(
         context: Context,
-        text: String
+        memory: String
     ) {
 
-        if (text.isBlank()) return
+        if (memory.isBlank()) return
 
-        val old =
-            read(context).toMutableList()
+        val preferences = context.getSharedPreferences(
+            PREF_NAME,
+            Context.MODE_PRIVATE
+        )
 
-        old.add(text)
+        val oldData = preferences.getString(
+            KEY_MEMORIES,
+            "[]"
+        ) ?: "[]"
 
-        val json =
+        val array = try {
+            JSONArray(oldData)
+        } catch (_: Exception) {
             JSONArray()
-
-        old.forEach {
-            json.put(it)
         }
 
-        context
-            .getSharedPreferences(
-                PREF,
-                Context.MODE_PRIVATE
-            )
-            .edit()
+        array.put(memory.trim())
+
+        preferences.edit()
             .putString(
-                KEY,
-                json.toString()
+                KEY_MEMORIES,
+                array.toString()
             )
             .apply()
     }
 
-    fun read(
+    fun getMemories(
         context: Context
     ): List<String> {
 
-        val raw =
-            context
-                .getSharedPreferences(
-                    PREF,
-                    Context.MODE_PRIVATE
-                )
-                .getString(
-                    KEY,
-                    "[]"
-                )
+        val preferences = context.getSharedPreferences(
+            PREF_NAME,
+            Context.MODE_PRIVATE
+        )
 
-        val json =
-            JSONArray(raw)
+        val data = preferences.getString(
+            KEY_MEMORIES,
+            "[]"
+        ) ?: "[]"
 
-        val result =
-            mutableListOf<String>()
-
-        for (
-            i in 0 until json.length()
-        ) {
-            result.add(
-                json.getString(i)
-            )
+        val array = try {
+            JSONArray(data)
+        } catch (_: Exception) {
+            JSONArray()
         }
 
-        return result
+        val memories = mutableListOf<String>()
+
+        for (i in 0 until array.length()) {
+
+            val value = array.optString(i)
+
+            if (value.isNotBlank()) {
+                memories.add(value)
+            }
+        }
+
+        return memories
+    }
+
+    fun clearMemories(
+        context: Context
+    ) {
+
+        context.getSharedPreferences(
+            PREF_NAME,
+            Context.MODE_PRIVATE
+        )
+            .edit()
+            .remove(KEY_MEMORIES)
+            .apply()
     }
 }
