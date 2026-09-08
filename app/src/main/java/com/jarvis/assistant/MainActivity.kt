@@ -1,120 +1,72 @@
-package com.jarvis.assistant
+<?xml version="1.0" encoding="utf-8"?>
 
-import android.Manifest
-import android.content.Intent
-import android.content.pm.PackageManager
-import android.os.Bundle
-import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
-import com.jarvis.assistant.databinding.ActivityMainBinding
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-class MainActivity : AppCompatActivity() {
+    <!-- Internet: AI backend / future live news -->
+    <uses-permission android:name="android.permission.INTERNET" />
 
-    private lateinit var binding: ActivityMainBinding
+    <!-- Microphone -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
-    private val permissionLauncher =
-        registerForActivityResult(
-            ActivityResultContracts.RequestMultiplePermissions()
-        ) {
-            startJarvis()
-        }
+    <!-- Foreground service -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+    <!-- Notifications -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
-        binding =
-            ActivityMainBinding.inflate(layoutInflater)
+    <!-- Exact alarms / reminders -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 
-        setContentView(binding.root)
+    <!-- Allow JARVIS to check whether these apps are installed -->
+    <queries>
 
-        binding.btnStart.setOnClickListener {
-            requestPermissionsForJarvis()
-        }
+        <package android:name="com.whatsapp" />
 
-        binding.btnStop.setOnClickListener {
+        <package android:name="com.google.android.youtube" />
 
-            stopService(
-                Intent(
-                    this,
-                    JarvisService::class.java
-                )
-            )
+        <package android:name="com.android.chrome" />
 
-            binding.status.text =
-                "JARVIS OFFLINE"
+        <package android:name="com.instagram.android" />
 
-            binding.detail.text =
-                "Assistant stopped"
-        }
+    </queries>
 
-        binding.btnReminder.setOnClickListener {
+    <application
+        android:allowBackup="true"
+        android:icon="@android:drawable/ic_btn_speak_now"
+        android:label="JARVIS"
+        android:roundIcon="@android:drawable/ic_btn_speak_now"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Jarvis">
 
-            AlarmReceiver.schedule(
-                this,
-                System.currentTimeMillis() + 60_000,
-                "JARVIS reminder"
-            )
+        <!-- Main JARVIS screen -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
 
-            Toast.makeText(
-                this,
-                "Reminder set for 1 minute",
-                Toast.LENGTH_SHORT
-            ).show()
-        }
-    }
+            <intent-filter>
 
-    private fun requestPermissionsForJarvis() {
+                <action android:name="android.intent.action.MAIN" />
 
-        val permissions =
-            mutableListOf(
-                Manifest.permission.RECORD_AUDIO
-            )
+                <category android:name="android.intent.category.LAUNCHER" />
 
-        if (
-            android.os.Build.VERSION.SDK_INT >= 33
-        ) {
-            permissions.add(
-                Manifest.permission.POST_NOTIFICATIONS
-            )
-        }
+            </intent-filter>
 
-        permissionLauncher.launch(
-            permissions.toTypedArray()
-        )
-    }
+        </activity>
 
-    private fun startJarvis() {
+        <!-- Voice / background assistant service -->
+        <service
+            android:name=".JarvisService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="microphone" />
 
-        if (
-            ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.RECORD_AUDIO
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
+        <!-- Reminder receiver -->
+        <receiver
+            android:name=".AlarmReceiver"
+            android:enabled="true"
+            android:exported="false" />
 
-            Toast.makeText(
-                this,
-                "Microphone permission required",
-                Toast.LENGTH_LONG
-            ).show()
+    </application>
 
-            return
-        }
-
-        ContextCompat.startForegroundService(
-            this,
-            Intent(
-                this,
-                JarvisService::class.java
-            )
-        )
-
-        binding.status.text =
-            "JARVIS ONLINE"
-
-        binding.detail.text =
-            "Voice assistant is active"
-    }
-}
+</manifest>
