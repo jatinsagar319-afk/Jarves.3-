@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<resources>
+
+    <style
+        name="Theme.Jarvis"
+        parent="Theme.Material3.Dark.NoActionBar">
+
+        <item name="android:fontFamily">
+            sans
+        </item>
+
+        <item name="android:statusBarColor">
+            #030509
+        </item>
+
+        <item name="android:navigationBarColor">
+            #030509
+        </item>
+
+        <item name="android:windowLightStatusBar">
+            false
+        </item>
+
+        <item name="colorPrimary">
+            #00C8FF
+        </item>
+
+        <item name="colorSecondary">
+            #00C8FF
+        </item>
+
+    </style>
+
+</resources>
